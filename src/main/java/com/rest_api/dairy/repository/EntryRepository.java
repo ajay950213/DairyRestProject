@@ -12,10 +12,5 @@ public interface EntryRepository extends JpaRepository<Entry, Long> {
 
 	List<Entry> findByuserid(long userid);
 	
-//	@Query(value = "select * from entries where userid =:id")
-//	public List<Entry> findByUserId(long id);
 
-	
-	@Query("SELECT e FROM Entry e WHERE e.userid.id = :userId")
-    List<Entry> findByUserId(@Param("userId") long userId);	
 }

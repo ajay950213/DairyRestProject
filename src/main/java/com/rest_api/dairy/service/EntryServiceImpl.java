@@ -52,17 +52,5 @@ public class EntryServiceImpl implements EntryService {
 	}
 
 
-	@Override
-    public List<Entry> getUserEntriesByUserId(long userId) {
-        return entryRepository.findByUserId(userId);
-    }
-	
-//	@Override
-//	public List<Entry> findByUserId(long id) {
-//		
-//		return entryRepository.findById(id);
-//		
-//	}
-//	
 	
 }

@@ -13,8 +13,6 @@ public interface EntryService {
 	public String deleteEntry(Entry entry);
 	public Entry findById(long id);
 	public List<Entry> findAll();
-//	public List<Entry> findByUserId(long id);
-	public List<Entry> getUserEntriesByUserId(long userId);
-	
+
 	
 }

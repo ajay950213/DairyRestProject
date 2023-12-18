@@ -106,10 +106,5 @@ public class EntryController {
 	}
 	
 	
-	@GetMapping("/{userId}")
-    public List<Entry> userEntries(@PathVariable("userId") long userId) {
-        return entryService.getUserEntriesByUserId(userId);
-    }
-	
 	
 }
