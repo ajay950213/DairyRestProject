@@ -2,8 +2,11 @@ package com.rest_api.dairy.controller;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -25,86 +28,174 @@ public class EntryController {
 	@Autowired
 	private EntryService entryService;
 	
-	@GetMapping("/{id}")
-	public Entry getEntry(@PathVariable("id") long id) {
+	
+	@GetMapping("/{userId}")
+	public ResponseEntity<Entry> getEntry(@PathVariable("userId") long userId) {
+	    
+		if (userId <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
 		
-		Entry entry = entryService.findById(id);
-		
-		return entry;
-		
+		try {
+	        Entry entry = entryService.findById(userId);
+	        
+	        if (entry == null) {
+	            return ResponseEntity.notFound().build();
+	        }
+
+	        return ResponseEntity.ok(entry);
+	    } catch (Exception e) {
+	        
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	    }
 	}
 	
 	
 	@GetMapping("/")
-	public List<Entry> getEntries(){
+	public ResponseEntity<List<Entry>> getEntries(){
 		
 		List<Entry> entries = entryService.findAll();
+		try {
+			if(entries.size()<=0) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			}
+			
+			return ResponseEntity.ok(entries);
+		}
+		catch(Exception e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+		}
 		
-		return entries;
 	}
 	
 	
 	@PostMapping("/")
-	public List<Entry> saveAllEntries(@RequestBody List<Entry> entries){
+	public ResponseEntity<List<Entry>>saveAllEntries(@RequestBody List<Entry> entries){
 		
-		List<Entry> allAntries = entryService.saveEntries(entries);
-	
-		return allAntries;
+		List<Entry> allEntries = entryService.saveEntries(entries);
+		
+		try {
+			if(allEntries.size()<=0 || entries == null || entries.isEmpty()) {
+				
+				ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+				
+			}
+			return new ResponseEntity<>(allEntries, HttpStatus.CREATED);
+		}
+		catch(Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+		
 	}
 	
 	
 	@PutMapping("/{id}")
-	public Entry updateEntry(@PathVariable("id") long id,@RequestBody Entry entry) {
+	public ResponseEntity<Entry> updateEntry(@PathVariable("id") long id,@RequestBody Entry entry) {
 		
-		Entry existingEntry = entryService.findById(id);
+		try {
+			Entry existingEntry = entryService.findById(id);
+			
+			if(existingEntry == null | entry == null) {
+				ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			}
+			
+			existingEntry.setDesription(entry.getDesription());
+			existingEntry.setEntrydate(entry.getEntrydate());
+			existingEntry.setUserid(entry.getUserid());
+			
+			Entry updatedEntry = entryService.saveEntry(existingEntry);
 		
-		existingEntry.setDesription(entry.getDesription());
-		existingEntry.setEntrydate(entry.getEntrydate());
-		existingEntry.setUserid(entry.getUserid());
+			return new ResponseEntity<>(updatedEntry,  HttpStatus.OK);
+		}
+		catch(Exception e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+		}
 		
-		Entry updatedEntry = entryService.saveEntry(existingEntry);
-		
-		return updatedEntry;
 	}
+	
 	
 	@PatchMapping("/{id}")
-	public Entry patchEntry(@PathVariable("id") long id, @RequestBody Entry entry) {
+	public ResponseEntity<Entry> patchEntry(@PathVariable("id") long id, @RequestBody Entry entry) {
 		
-		Entry updatedEntry = entryService.findById(id);
-		
-		Date entryDate = entry.getEntrydate();
-		String description = entry.getDesription();
-		User userObject = entry.getUserid();
-		
-		long userid = userObject.getId();
-		
-		if(description!=null && description.length()>0) {
-			updatedEntry.setDesription(description);
+		try {
+			Entry updatedEntry = entryService.findById(id);
+			
+			Date entryDate = entry.getEntrydate();
+			String description = entry.getDesription();
+			User userObject = entry.getUserid();
+			
+			long userid = userObject.getId();
+			
+			if(description!=null && description.length()>0) {
+				updatedEntry.setDesription(description);
+			}
+			if(entryDate!=null) {
+				updatedEntry.setEntrydate(entryDate);
+			}
+			if(userid>0) {
+				updatedEntry.setUserid(userObject);
+			}
+			
+			Entry entry1 = entryService.saveEntry(updatedEntry);
+			return ResponseEntity.status(HttpStatus.OK).body(entry1);
 		}
-		if(entryDate!=null) {
-			updatedEntry.setEntrydate(entryDate);
-		}
-		if(userid>0) {
-			updatedEntry.setUserid(userObject);
-		}
+		catch(Exception e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		
-		Entry entry1 = entryService.saveEntry(updatedEntry);
-		
-		return entry1;
+		}
 		
 	}
+		
+	
 	
 	@DeleteMapping("/{id}")
-	public String deletEntry(@PathVariable("id") long id) {
+	public ResponseEntity<String> deleteEntry(@PathVariable("id") long id) {
 		
-		Entry existingEntry = entryService.findById(id);
+		try {
+			Entry existingEntry = entryService.findById(id);
+		    
+		    if (existingEntry != null) {
+		        String output = entryService.deleteEntry(existingEntry);
+		        return ResponseEntity.status(HttpStatus.OK).body(output);
+		    }
+		    else{	
+		    	return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Resource not found");
+		    }
+		}
+		catch(Exception e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		}
 		
-		String output =entryService.deleteEntry(existingEntry);
-		
-		return output;
 		
 	}
 	
 	
+	@GetMapping("/userid/{id}")
+	public ResponseEntity<List<Entry>> getAllEntriesByUserId(@PathVariable("id") long id){
+		
+		try{
+			List<Entry> entries = entryService.getAllEntriesByUserId(id);
+		
+			if(entries.isEmpty() || entries.size()<=0 || entries == null) {
+				
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+						
+			}
+			
+			return ResponseEntity.status(HttpStatus.OK).body(entries);
+		}
+		catch(Exception e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+		}
+			
+	}
+	
+	@GetMapping("/allEntryIds")
+	public ResponseEntity<List<Long>> getAlEntryIds(){
+		
+		List<Long> allEntryIds = entryService.findAllEntryIds();
+		
+		return ResponseEntity.status(HttpStatus.OK).body(allEntryIds);
+	}
 	
 }

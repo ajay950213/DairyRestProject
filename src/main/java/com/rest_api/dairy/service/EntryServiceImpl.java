@@ -13,14 +13,14 @@ public class EntryServiceImpl implements EntryService {
 
 	@Autowired
 	private EntryRepository entryRepository;
-
+	
 	@Override
 	public Entry saveEntry(Entry entry) {
 		return entryRepository.save(entry);
 	}
 	
 	
-	
+
 	public List<Entry> saveEntries(List<Entry> entries){
 		
 		List<Entry> entries1 = entryRepository.saveAll(entries);
@@ -41,16 +41,30 @@ public class EntryServiceImpl implements EntryService {
 		return "Entry Deleted i.e "+entry;
 	}
 	
+	
 	@Override
 	public Entry findById(long id) {
-		return entryRepository.findById(id).get();
+		
+		Entry entry = entryRepository.findById(id).get();
+		
+		return entry;
 	}
 
 	@Override
 	public List<Entry> findAll() {
 		return entryRepository.findAll();
 	}
+	
+	@Override
+	public List<Entry> getAllEntriesByUserId(long userId){
+		return entryRepository.getEntriesByUserId(userId);
+	}
 
 
+
+	@Override
+	public List<Long> findAllEntryIds() {
+		return entryRepository.findAllEntryIds();
+	}
 	
 }
