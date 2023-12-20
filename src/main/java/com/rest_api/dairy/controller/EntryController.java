@@ -27,62 +27,71 @@ public class EntryController {
 
 	@Autowired
 	private EntryService entryService;
-	
+
+	List<Long> entryIdList = entryService.findAllEntryIds();
+
 	
 	@GetMapping("/{userId}")
-	public ResponseEntity<Entry> getEntry(@PathVariable("userId") long userId) {
-	    
-		if (userId <= 0) {
-            return ResponseEntity.badRequest().build();
-        }
-		
-		try {
-	        Entry entry = entryService.findById(userId);
-	        
-	        if (entry == null) {
-	            return ResponseEntity.notFound().build();
+	public ResponseEntity<Entry> getEntry(@PathVariable("userId") Long userId) {
+	    try {
+	        if (userId == null || userId <= 0) {
+	            throw new IllegalArgumentException("Invalid userId provided");
 	        }
 
-	        return ResponseEntity.ok(entry);
-	    } catch (Exception e) {
-	        
+	        if (entryIdList.contains(userId)) {
+	            Entry entry = entryService.findById(userId);
+
+	            if (entry == null) {
+	                return ResponseEntity.notFound().build();
+	            }
+
+	            return ResponseEntity.ok(entry);
+	        } else {
+	            return ResponseEntity.notFound().build();
+	        }
+	    } 
+	    catch (IllegalArgumentException e) {
+	        return ResponseEntity.badRequest().build();
+	    } 
+	    catch (Exception e) {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 	    }
 	}
-	
+
 	
 	@GetMapping("/")
 	public ResponseEntity<List<Entry>> getEntries(){
 		
-		List<Entry> entries = entryService.findAll();
 		try {
-			if(entries.size()<=0) {
+			List<Entry> entries = entryService.findAll();
+			
+			if(entries.size()<=0 || entries.isEmpty()) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 			}
 			
 			return ResponseEntity.ok(entries);
 		}
 		catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 		
 	}
 	
 	
 	@PostMapping("/")
-	public ResponseEntity<List<Entry>>saveAllEntries(@RequestBody List<Entry> entries){
-		
-		List<Entry> allEntries = entryService.saveEntries(entries);
+	public ResponseEntity<List<Entry>> saveAllEntries(@RequestBody List<Entry> entries){
 		
 		try {
+			List<Entry> allEntries = entryService.saveEntries(entries);
+			
 			if(allEntries.size()<=0 || entries == null || entries.isEmpty()) {
 				
-				ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-				
+				ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 			}
 			return new ResponseEntity<>(allEntries, HttpStatus.CREATED);
 		}
 		catch(Exception e) {
+			
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 		
@@ -93,22 +102,29 @@ public class EntryController {
 	public ResponseEntity<Entry> updateEntry(@PathVariable("id") long id,@RequestBody Entry entry) {
 		
 		try {
-			Entry existingEntry = entryService.findById(id);
 			
-			if(existingEntry == null | entry == null) {
-				ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			if(entryIdList.contains(id)) {
+				Entry existingEntry = entryService.findById(id);
+				
+				if(existingEntry == null || entry == null) {
+					ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+				}
+				
+				existingEntry.setDesription(entry.getDesription());
+				existingEntry.setEntrydate(entry.getEntrydate());
+				existingEntry.setUserid(entry.getUserid());
+				
+				Entry updatedEntry = entryService.saveEntry(existingEntry);
+			
+				return new ResponseEntity<>(updatedEntry, HttpStatus.OK);
+			}
+			else {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 			}
 			
-			existingEntry.setDesription(entry.getDesription());
-			existingEntry.setEntrydate(entry.getEntrydate());
-			existingEntry.setUserid(entry.getUserid());
-			
-			Entry updatedEntry = entryService.saveEntry(existingEntry);
-		
-			return new ResponseEntity<>(updatedEntry,  HttpStatus.OK);
 		}
 		catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 		
 	}
@@ -118,32 +134,40 @@ public class EntryController {
 	public ResponseEntity<Entry> patchEntry(@PathVariable("id") long id, @RequestBody Entry entry) {
 		
 		try {
-			Entry updatedEntry = entryService.findById(id);
+			if(entryIdList.contains(id)) {
+				
+				Entry updatedEntry = entryService.findById(id);
+				
+				Date entryDate = entry.getEntrydate();
+				String description = entry.getDesription();
+				User userObject = entry.getUserid();
+				
+				long userid = userObject.getId();
+				
+				if(description!=null && description.length()>0) {
+					updatedEntry.setDesription(description);
+				}
+				if(entryDate!=null) {
+					updatedEntry.setEntrydate(entryDate);
+				}
+				if(userid>0) {
+					updatedEntry.setUserid(userObject);
+				}
+				
+				Entry entry1 = entryService.saveEntry(updatedEntry);
+				return ResponseEntity.status(HttpStatus.OK).body(entry1);
 			
-			Date entryDate = entry.getEntrydate();
-			String description = entry.getDesription();
-			User userObject = entry.getUserid();
-			
-			long userid = userObject.getId();
-			
-			if(description!=null && description.length()>0) {
-				updatedEntry.setDesription(description);
 			}
-			if(entryDate!=null) {
-				updatedEntry.setEntrydate(entryDate);
+			else {
+				return ResponseEntity.notFound().build();
 			}
-			if(userid>0) {
-				updatedEntry.setUserid(userObject);
-			}
-			
-			Entry entry1 = entryService.saveEntry(updatedEntry);
-			return ResponseEntity.status(HttpStatus.OK).body(entry1);
+
 		}
 		catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		
 		}
-		
+
 	}
 		
 	
@@ -152,10 +176,12 @@ public class EntryController {
 	public ResponseEntity<String> deleteEntry(@PathVariable("id") long id) {
 		
 		try {
+			
 			Entry existingEntry = entryService.findById(id);
 		    
 		    if (existingEntry != null) {
 		        String output = entryService.deleteEntry(existingEntry);
+		        
 		        return ResponseEntity.status(HttpStatus.OK).body(output);
 		    }
 		    else{	
@@ -163,9 +189,8 @@ public class EntryController {
 		    }
 		}
 		catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
-		
 		
 	}
 	
@@ -185,17 +210,20 @@ public class EntryController {
 			return ResponseEntity.status(HttpStatus.OK).body(entries);
 		}
 		catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 			
 	}
 	
+	
 	@GetMapping("/allEntryIds")
 	public ResponseEntity<List<Long>> getAlEntryIds(){
+		try {
+			return ResponseEntity.status(HttpStatus.OK).body(entryIdList);
+		}catch(Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
 		
-		List<Long> allEntryIds = entryService.findAllEntryIds();
-		
-		return ResponseEntity.status(HttpStatus.OK).body(allEntryIds);
 	}
 	
 }
