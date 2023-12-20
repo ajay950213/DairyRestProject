@@ -1,7 +1,6 @@
 package com.rest_api.dairy.controller;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.rest_api.dairy.entity.User;
 import com.rest_api.dairy.service.UserService;
 
+import jakarta.annotation.PostConstruct;
+
 @RequestMapping("/users")
 @RestController
 public class UserController {
@@ -26,8 +27,13 @@ public class UserController {
 	@Autowired
 	private UserService userService;
 	
-	List<Long> userIdList = userService.findAllUserIds();
+	private List<Long> userIdList;
 
+	@PostConstruct
+    private void initializeUserIdList() {
+        this.userIdList = userService.findAllUserIds();
+    }
+	
 	@GetMapping("/")
 	public ResponseEntity<List<User>> getUsers() {
 		
@@ -54,7 +60,7 @@ public class UserController {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 			}
 			
-			if(userIdList.contains(id)) {
+			if(this.userIdList.contains(id)) {
 				User user = userService.findUserById(id);
 				
 				if(user == null) {
@@ -129,7 +135,7 @@ public class UserController {
 	@PutMapping("/users/{id}")
 	public ResponseEntity<User> updateUserbyId(@PathVariable("id") long id, @RequestBody User user) {
 		try {
-			if(userIdList.contains(id)) {
+			if(this.userIdList.contains(id)) {
 				User user1 = userService.findUserById(id);
 				
 				if(user1 == null) {
@@ -157,7 +163,7 @@ public class UserController {
 	public ResponseEntity<User> patchUserbyId(@PathVariable("id") long id, @RequestBody User user) {
 		
 		try {
-			if(userIdList.contains(id)) {
+			if(this.userIdList.contains(id)) {
 				
 				User existingUser = userService.findUserById(id);
 				
@@ -195,7 +201,7 @@ public class UserController {
 	@DeleteMapping("/{id}")
 	public ResponseEntity<String> deleteUser(@PathVariable long id) {
 		try {
-			if(userIdList.contains(id)) {
+			if(this.userIdList.contains(id)) {
 				
 				User user = userService.findUserById(id);
 				if(user == null) {
@@ -215,11 +221,11 @@ public class UserController {
 		
 	}
 	
-	
+
 	@GetMapping("/allUserIds")
 	public ResponseEntity<List<Long>> getAlUserIds(){
 		try {
-			return ResponseEntity.status(HttpStatus.OK).body(userIdList);
+			return ResponseEntity.status(HttpStatus.OK).body(this.userIdList);
 		}
 		catch(Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

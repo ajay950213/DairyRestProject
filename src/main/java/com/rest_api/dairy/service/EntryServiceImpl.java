@@ -61,7 +61,6 @@ public class EntryServiceImpl implements EntryService {
 	}
 
 
-
 	@Override
 	public List<Long> findAllEntryIds() {
 		return entryRepository.findAllEntryIds();

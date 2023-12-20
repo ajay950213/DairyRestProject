@@ -2,7 +2,6 @@ package com.rest_api.dairy.controller;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +20,8 @@ import com.rest_api.dairy.entity.Entry;
 import com.rest_api.dairy.entity.User;
 import com.rest_api.dairy.service.EntryService;
 
+import jakarta.annotation.PostConstruct;
+
 @RestController
 @RequestMapping("/entries")
 public class EntryController {
@@ -28,8 +29,12 @@ public class EntryController {
 	@Autowired
 	private EntryService entryService;
 
-	List<Long> entryIdList = entryService.findAllEntryIds();
+	private List<Long> entryIdList;
 
+	@PostConstruct
+    private void initializeEntryIdList() {
+        this.entryIdList = entryService.findAllEntryIds();
+    }
 	
 	@GetMapping("/{userId}")
 	public ResponseEntity<Entry> getEntry(@PathVariable("userId") Long userId) {
@@ -38,7 +43,7 @@ public class EntryController {
 	            throw new IllegalArgumentException("Invalid userId provided");
 	        }
 
-	        if (entryIdList.contains(userId)) {
+	        if (this.entryIdList.contains(userId)) {
 	            Entry entry = entryService.findById(userId);
 
 	            if (entry == null) {
@@ -103,7 +108,7 @@ public class EntryController {
 		
 		try {
 			
-			if(entryIdList.contains(id)) {
+			if(this.entryIdList.contains(id)) {
 				Entry existingEntry = entryService.findById(id);
 				
 				if(existingEntry == null || entry == null) {
@@ -134,7 +139,7 @@ public class EntryController {
 	public ResponseEntity<Entry> patchEntry(@PathVariable("id") long id, @RequestBody Entry entry) {
 		
 		try {
-			if(entryIdList.contains(id)) {
+			if(this.entryIdList.contains(id)) {
 				
 				Entry updatedEntry = entryService.findById(id);
 				
@@ -219,7 +224,7 @@ public class EntryController {
 	@GetMapping("/allEntryIds")
 	public ResponseEntity<List<Long>> getAlEntryIds(){
 		try {
-			return ResponseEntity.status(HttpStatus.OK).body(entryIdList);
+			return ResponseEntity.status(HttpStatus.OK).body(this.entryIdList);
 		}catch(Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
