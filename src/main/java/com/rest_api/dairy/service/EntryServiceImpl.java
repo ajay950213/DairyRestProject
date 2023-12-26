@@ -1,6 +1,7 @@
 package com.rest_api.dairy.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,11 +44,11 @@ public class EntryServiceImpl implements EntryService {
 	
 	
 	@Override
-	public Entry findById(long id) {
+	public Optional<Entry> findById(long id) {
 		
 		Entry entry = entryRepository.findById(id).get();
 		
-		return entry;
+		return Optional.ofNullable(entry);
 	}
 
 	@Override

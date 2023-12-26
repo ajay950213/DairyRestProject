@@ -10,13 +10,13 @@ public interface UserService {
 	public User saveUser(User user);
 	public List<User> saveUsers(List<User> users);
 	public User findUserById(long id);
-	
 	public User updateUser(User user);
-	public String deleteUser(User user);
-	public User findById(long id);
+//	public Optional<?> deleteUser(User user);
+	public Optional<User> findById(long id);
 	public List<User> findAll();
 	public List<Long> findAllUserIds();
 //	public User getUserByUsername(String username);
+	public String deleteUser(Optional<User> user);
 	
 	
 }

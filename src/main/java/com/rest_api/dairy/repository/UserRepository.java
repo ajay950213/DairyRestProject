@@ -1,7 +1,6 @@
 package com.rest_api.dairy.repository;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,11 +16,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 //	@Query("SELECT u FROM User u WHERE u.id = :id")
 //	User findById(long id);
-
-//	Optional<User> findById(long id);
-	User findById(long id);
 	
-	@Query(value = "select id from users", nativeQuery=true)
+	public User findById(long id);
+	
+	@Query(value = "select id from dairy_users", nativeQuery=true)
 	List<Long> findAllUserIds();
 
 }

@@ -1,6 +1,7 @@
 package com.rest_api.dairy.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,8 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.rest_api.dairy.entity.User;
 import com.rest_api.dairy.service.UserService;
 
-import jakarta.annotation.PostConstruct;
-
 @RequestMapping("/users")
 @RestController
 public class UserController {
@@ -27,15 +26,9 @@ public class UserController {
 	@Autowired
 	private UserService userService;
 	
-	private List<Long> userIdList;
-
-	@PostConstruct
-    private void initializeUserIdList() {
-        this.userIdList = userService.findAllUserIds();
-    }
 	
 	@GetMapping("/")
-	public ResponseEntity<List<User>> getUsers() {
+	public ResponseEntity<?> getUsers() {
 		
 		try {
 			List<User> users = userService.findAll();
@@ -45,42 +38,40 @@ public class UserController {
 			}
 		
 			return ResponseEntity.ok().body(users);
+			
 		}catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 		
-		
 	}
+	
 	
 	
 	@GetMapping("/{id}")
-	public ResponseEntity<User> getUser(@PathVariable("id") long id) {
+	public ResponseEntity<?> getUser(@PathVariable("id") long id) {
 		try {
 			if(id<=0) {
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid user id");
 			}
-			
-			if(this.userIdList.contains(id)) {
-				User user = userService.findUserById(id);
+				
+				Optional<User> user = userService.findById(id);
 				
 				if(user == null) {
-					return new ResponseEntity<User>(HttpStatus.NOT_FOUND);
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No user found");
 				}
 				return ResponseEntity.ok(user);
-			}
-			else {
-				return new ResponseEntity<User>(HttpStatus.NOT_FOUND);
-			}
+			
 		}
 		catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 		
 	}
 	
 	
+	
 	@PostMapping("/")
-	public ResponseEntity<List<User>> saveUsers(@RequestBody List<User> users) {
+	public ResponseEntity<?> saveUsers(@RequestBody List<User> users) {
 		
 		try {
 			List<User> responseUsers = userService.saveUsers(users);
@@ -90,14 +81,14 @@ public class UserController {
 			}
 			return ResponseEntity.status(HttpStatus.CREATED).body(responseUsers);
 		}catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 		
 	}
 	
 
 	@PostMapping("/users/")
-	public ResponseEntity<User> saveUser(@RequestBody User user) {
+	public ResponseEntity<?> saveUser(@RequestBody User user) {
 		
 		try {
 			User responseUser = userService.saveUser(user);
@@ -108,38 +99,41 @@ public class UserController {
 			
 			return ResponseEntity.status(HttpStatus.CREATED).body(responseUser);
 		}catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
-		
 		
 	}
 	
 	
 	@PutMapping("/users/")
-	public ResponseEntity<User> updateUser(@RequestBody User user) {
+	public ResponseEntity<?> updateUser(@RequestBody User user) {
 		try {
 			User updatedUser = userService.updateUser(user);
-			
+		
 			if(user == null) {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(updatedUser);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User "+updatedUser.getId()+" not fond");
 			}
 			return ResponseEntity.ok(updatedUser);
 		}
 		catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 		
 	}
 	
 	
 	@PutMapping("/users/{id}")
-	public ResponseEntity<User> updateUserbyId(@PathVariable("id") long id, @RequestBody User user) {
+	public ResponseEntity<?> updateUserbyId(@PathVariable("id") long id, @RequestBody User user) {
 		try {
-			if(this.userIdList.contains(id)) {
+			
+			if(id<=0) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid user id");
+			}
+			
 				User user1 = userService.findUserById(id);
 				
 				if(user1 == null) {
-					return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User with"+id+" not found");
 				}
 				
 				user1.setId(id);
@@ -149,26 +143,28 @@ public class UserController {
 				User updatedUser = userService.updateUser(user1);
 				
 				return ResponseEntity.ok(updatedUser);
-			}else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-			}
+			
 			
 		}catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 	
 	}
 	
+	
+	
 	@PatchMapping("/users/{id}")
-	public ResponseEntity<User> patchUserbyId(@PathVariable("id") long id, @RequestBody User user) {
+	public ResponseEntity<?> patchUserbyId(@PathVariable("id") long id, @RequestBody User user) {
 		
 		try {
-			if(this.userIdList.contains(id)) {
+				if(id<=0) {
+					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid user id");
+				}
 				
 				User existingUser = userService.findUserById(id);
 				
 				if(existingUser == null) {
-					return ResponseEntity.notFound().build();
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
 				}
 				
 				long userId = user.getId();
@@ -185,50 +181,47 @@ public class UserController {
 				
 				User updatedUser = userService.updateUser(existingUser);
 			
-				return ResponseEntity.ok(updatedUser);
-			}
-			else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-			}
+				return ResponseEntity.status(HttpStatus.OK).body("User updated "+updatedUser);
+			
 		}catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
-		
-		
+			
 	}
 	
 	
 	@DeleteMapping("/{id}")
-	public ResponseEntity<String> deleteUser(@PathVariable long id) {
+	public ResponseEntity<?> deleteUser(@PathVariable long id) {
 		try {
-			if(this.userIdList.contains(id)) {
-				
-				User user = userService.findUserById(id);
+				if(id<=0) {
+					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid user id");
+				}
+			
+				Optional<User> user = userService.findById(id);
 				if(user == null) {
-					return ResponseEntity.notFound().build();
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No resource found");
 				}
 				
 				String output = userService.deleteUser(user);
-				return ResponseEntity.status(HttpStatus.OK).body(output);
 				
-			}else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-			}
+				return ResponseEntity.status(HttpStatus.OK).body(output);
+	
 			
 		}catch(Exception e){
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 		
 	}
-	
+
 
 	@GetMapping("/allUserIds")
-	public ResponseEntity<List<Long>> getAlUserIds(){
+	public ResponseEntity<?> getAlUserIds(){
 		try {
-			return ResponseEntity.status(HttpStatus.OK).body(this.userIdList);
+			List<Long> allUserIds = userService.findAllUserIds();
+			return ResponseEntity.status(HttpStatus.OK).body(allUserIds);
 		}
 		catch(Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 		
 	}

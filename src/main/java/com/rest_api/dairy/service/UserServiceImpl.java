@@ -32,18 +32,20 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public String deleteUser(User user) {
+	public String deleteUser(Optional<User> user) {
 		
-		userRepository.delete(user);
+		userRepository.delete(user.get());
 		
 		return "User deleted it is "+user;
 	}
 
+	
 	@Override
-	public User findById(long id) {
-		return userRepository.findById(id);
+	public Optional<User> findById(long id) {
+		return Optional.ofNullable(userRepository.findById(id));
 	}
 
+	
 	@Override
 	public List<User> findAll() {
 		return userRepository.findAll();
